@@ -1,0 +1,51 @@
+name: Autograding Workflow
+
+on:
+  pull_request:
+    branches:
+      - main # This triggers the workflow when a PR is opened or updated
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }} # Ensures tests run on the PR branch
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14" # Use the appropriate Node.js version
+
+      - name: Install dependencies
+        run: npm install # Assuming the project uses npm for package management
+
+      - name: Run tests
+        run: npm test # Or specify the command to run your test cases
+
+      - name: Add PR comment on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: '${{ github.repository_owner }}',
+              repo: '${{ github.event.repository.name }}',
+              body: '❌ Tests failed! Please check the logs, fix the errors, and push again.'
+            })
+
+      - name: Add PR comment on success
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: '${{ github.repository_owner }}',
+              repo: '${{ github.event.repository.name }}',
+              body: '✅ All tests passed! Your assignment is good to go. 🎉'
+            })
